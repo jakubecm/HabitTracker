@@ -4,7 +4,22 @@
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Hello, World!");
+            bool requiresClosing = false;
+
+            Interface appInterface = new Interface();
+            DatabaseController dbController = new(@"Data Source=habit-tracker.db");
+
+            dbController.InitializeDatabase();
+
+            while (!requiresClosing)
+            {
+                Console.Clear();
+                appInterface.PresentMenu();
+                var selectedOption = appInterface.ParseSelection();
+                requiresClosing = appInterface.ExecuteSelected(selectedOption, dbController);
+            }
         }
     }
+
+
 }
