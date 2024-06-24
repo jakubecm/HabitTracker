@@ -15,7 +15,7 @@
             {
                 Console.Clear();
                 appInterface.PresentMenu();
-                var selectedOption = appInterface.ParseSelection();
+                var selectedOption = Interface.ParseSelection();
                 requiresClosing = appInterface.ExecuteSelected(selectedOption, dbController);
             }
         }

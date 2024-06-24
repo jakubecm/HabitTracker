@@ -14,11 +14,12 @@ namespace HabitTracker
             Type 1 to View All Records.
             Type 2 to Insert a new Record.
             Type 3 to Delete a Record.
-            Type 4 to Update a Record");
+            Type 4 to Update a Record
+            Type 5 to Create a new Habit");
             Console.WriteLine("\n--------------------------------------------");
         }
 
-        public int ParseSelection()
+        public static int ParseSelection()
         {
             Console.Write("Your Selection:  ");
             bool valid = false;
@@ -56,6 +57,9 @@ namespace HabitTracker
                     return false;
                 case 4:
                     dbController.UpdateRecord();
+                    return false;
+                case 5:
+                    dbController.CreateHabit();
                     return false;
                 default:
                     Console.WriteLine("Invalid input detected. Please retry.");
