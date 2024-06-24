@@ -50,7 +50,7 @@ namespace HabitTracker
                     dbController.ViewRecords();
                     return false;
                 case 2:
-                    dbController.InsertRecord();
+                    dbController.PrepareInsert();
                     return false;
                 case 3:
                     dbController.DeleteRecord();

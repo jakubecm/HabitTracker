@@ -1,4 +1,5 @@
 ﻿using Microsoft.Data.Sqlite;
+using System.Globalization;
 
 namespace HabitTracker
 {
@@ -6,7 +7,7 @@ namespace HabitTracker
     {
         private string connectionString;
         private SqliteConnection connection;
-        private List<(string, string)> habits;
+        private List<(string habitName, string unitName)> habits;
 
         public DatabaseController(string connectionString)
         {
@@ -22,10 +23,10 @@ namespace HabitTracker
             var tableCmd = connection.CreateCommand();
 
             tableCmd.CommandText = @"CREATE TABLE IF NOT EXISTS drinking_water (
-                                        Id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                        Date TEXT,
-                                        Quantity INTEGER
-                                        )";
+                                            Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                            Date TEXT,
+                                            Quantity INTEGER
+                                            )";
 
             tableCmd.ExecuteNonQuery();
 
@@ -36,42 +37,113 @@ namespace HabitTracker
             Console.ReadKey();
         }
 
-        internal void DeleteRecord()
+        internal void PrepareInsert()
         {
-            throw new NotImplementedException();
-        }
+            string date = DateTime.Now.ToString("dd-MM-yyyy");
 
-        internal void InsertRecord()
-        {
             Console.WriteLine("Which habit would you like to log?");
-            ViewHabits();
-            Console.Write("Your choice: ");
-            bool validChoice = false;
-            int selectedOption = 0;
-
-            while (!validChoice)
-            {
-                selectedOption = Interface.ParseSelection();
-
-                if (selectedOption >= habits.Count || selectedOption < 0)
-                {
-                    Console.WriteLine("This is not a valid choice.");
-                    continue;
-                }
-
-                validChoice = true;
-            }
+            int selectedOption = SelectHabitFromDb();
 
             Console.Write("Do you want to use today's date? (y/n):   ");
-            var userResponse = Console.ReadKey();
+            var userResponse = Console.ReadKey().ToString();
+
+            while (userResponse != "y" && userResponse != "n")
+            {
+                Console.WriteLine("Invalid input, please reenter:");
+                Console.Write("Do you want to use today's date? (y/n):  ");
+                userResponse = Console.ReadKey().ToString();
+            }
+
+            if (userResponse == "n")
+            {
+                bool isValid = false;
+
+                while (!isValid)
+                {
+                    Console.Write("Enter your own date in the format DD-MM-YYYY:  ");
+                    date = Console.ReadLine()!;
+                    isValid = IsValidDate(date!);
+                }
+            }
+
+            Console.Write($"Enter amount of {this.habits[selectedOption].unitName}:  ");
+            int measure = Interface.ParseSelection();
+
+            InsertRecord(this.habits[selectedOption], date, measure);
+        }
+
+        internal void InsertRecord((string tableName, string unitsName) habit, string date, int measure)
+        {
+            this.connection.Open();
+            var insertCmd = connection.CreateCommand();
+            insertCmd.CommandText = $"INSERT INTO {habit.tableName} (Date, {habit.unitsName}) VALUES (@date, @measure)";
+            insertCmd.Parameters.AddWithValue("@date", date);
+            insertCmd.Parameters.AddWithValue("@measure", measure);
+
+            insertCmd.ExecuteNonQuery();
+            this.connection.Close();
+        }
+
+        internal void ViewRecords()
+        {
+            Console.WriteLine("Which habit records would you like to see?");
+            int selectedOption = SelectHabitFromDb();
+            string tableName = this.habits[selectedOption].habitName;
+
+            var viewString = $"SELECT * FROM {tableName}";
+
+            try
+            {
+                connection.Open();
+                using var command = new SqliteCommand(viewString, connection);
+                using var reader = command.ExecuteReader();
+
+                Console.WriteLine($"HABIT RECORDS :  {tableName}");
+                Console.Write("----------------------------------");
+
+                if (reader.HasRows)
+                {
+                    while (reader.Read())
+                    {
+                        var id = reader.GetInt32(0);
+                        var date = reader.GetString(1);
+                        var unit = reader.GetString(2);
+                        Console.WriteLine($"{id}\t{date}\t{unit}");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("No records found.");
+                }
+            }
+            catch (SqliteException ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
         }
 
         internal void UpdateRecord()
         {
-            throw new NotImplementedException();
+            ViewHabits();
+            Console.WriteLine("Which habit table do you wish to update?");
+            var selectedHabitIndex = SelectHabitFromDb();
+
+            Console.WriteLine("What is the ID of the record you wish to update?");
+            var selectedRecordId = Interface.ParseSelection();
+
+            bool recordExists = DoesRecordExist(this.habits[selectedHabitIndex].habitName, selectedRecordId);
+
+            if (recordExists)
+            {
+                // continue with updating the record
+            }
+            else
+            {
+                Console.WriteLine("There is no record of the entered ID in the selected habit table.");
+            }
         }
 
-        internal void ViewRecords()
+        internal void DeleteRecord()
         {
             throw new NotImplementedException();
         }
@@ -86,7 +158,7 @@ namespace HabitTracker
 
             this.connection.Open();
             var createCmd = connection.CreateCommand();
-            createCmd.CommandText = $"CREATE TABLE IF NOT EXISTS {habitName} (ID INTEGER PRIMARY KEY AUTOINCREMENT, Date TEXT, {unitName} INTEGER";
+            createCmd.CommandText = $"CREATE TABLE IF NOT EXISTS {habitName} (Id INTEGER PRIMARY KEY AUTOINCREMENT, Date TEXT, {unitName} INTEGER";
             createCmd.ExecuteNonQuery();
             this.connection.Close();
 
@@ -102,5 +174,55 @@ namespace HabitTracker
             }
             Console.WriteLine("-----------------------------");
         }
+        internal int SelectHabitFromDb()
+        {
+            bool validChoice = false;
+            int selectedOption = 0;
+            ViewHabits();
+            Console.Write("Your choice: ");
+
+            while (!validChoice)
+            {
+                selectedOption = Interface.ParseSelection();
+
+                if (selectedOption >= habits.Count || selectedOption < 0)
+                {
+                    Console.WriteLine("This is not a valid choice.");
+                    continue;
+                }
+
+                validChoice = true;
+            }
+
+            return selectedOption;
+        }
+
+        internal static bool IsValidDate(string date)
+        {
+            DateTime tempDate;
+            string format = "dd-MM-yyyy";
+            CultureInfo provider = CultureInfo.InvariantCulture;
+
+            return DateTime.TryParseExact(date, format, provider, DateTimeStyles.None, out tempDate);
+        }
+
+        internal bool DoesRecordExist(string table, int id)
+        {
+            connection.Open();
+
+            var existanceQuery = connection.CreateCommand();
+            existanceQuery.CommandText = $"SELECT * FROM {table} WHERE Id = {id}";
+            var foundRecord = existanceQuery.ExecuteScalar();
+
+            connection.Close();
+
+            if (foundRecord != null)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
     }
 }
