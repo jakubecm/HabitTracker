@@ -127,15 +127,35 @@ namespace HabitTracker
             ViewHabits();
             Console.WriteLine("Which habit table do you wish to update?");
             var selectedHabitIndex = SelectHabitFromDb();
+            var table = this.habits[selectedHabitIndex].habitName;
+            var unit = this.habits[selectedHabitIndex].unitName;
 
             Console.WriteLine("What is the ID of the record you wish to update?");
             var selectedRecordId = Interface.ParseSelection();
 
-            bool recordExists = DoesRecordExist(this.habits[selectedHabitIndex].habitName, selectedRecordId);
+            bool recordExists = DoesRecordExist(table, selectedRecordId);
 
             if (recordExists)
             {
-                // continue with updating the record
+                Console.Write("Insert the updated measure for this record: ");
+                var updatedMeasure = Interface.ParseSelection();
+
+                try
+                {
+                    connection.Open();
+                    var updateQuery = connection.CreateCommand();
+                    updateQuery.CommandText = $"UPDATE {table} SET {unit} = @{unit} WHERE Id = @id";
+                    updateQuery.Parameters.AddWithValue($"@{unit}", updatedMeasure);
+                    updateQuery.Parameters.AddWithValue($"@Id", selectedRecordId);
+
+                    updateQuery.ExecuteNonQuery();
+                    Console.WriteLine($"Row updated sucessfuly. Press any key to continue.");
+                    Console.ReadKey();
+                }
+                catch (SqliteException ex)
+                {
+                    Console.WriteLine(ex.Message);
+                }
             }
             else
             {
@@ -145,7 +165,39 @@ namespace HabitTracker
 
         internal void DeleteRecord()
         {
-            throw new NotImplementedException();
+            ViewHabits();
+            Console.WriteLine("Which habit table do you wish to delete from?");
+            var selectedHabitIndex = SelectHabitFromDb();
+            var table = this.habits[selectedHabitIndex].habitName;
+            var unit = this.habits[selectedHabitIndex].unitName;
+
+            Console.WriteLine("What is the ID of the record you wish to delete?");
+            var selectedRecordId = Interface.ParseSelection();
+
+            bool recordExists = DoesRecordExist(table, selectedRecordId);
+
+            if (recordExists)
+            {
+                try
+                {
+                    connection.Open();
+                    var updateQuery = connection.CreateCommand();
+                    updateQuery.CommandText = $"DELETE FROM {table} WHERE Id = @id";
+                    updateQuery.Parameters.AddWithValue($"@Id", selectedRecordId);
+
+                    updateQuery.ExecuteNonQuery();
+                    Console.WriteLine($"Row deleted sucessfuly. Press any key to continue.");
+                    Console.ReadKey();
+                }
+                catch (SqliteException ex)
+                {
+                    Console.WriteLine(ex.Message);
+                }
+            }
+            else
+            {
+                Console.WriteLine("There is no record of the entered ID in the selected habit table.");
+            }
         }
 
         internal void CreateHabit()

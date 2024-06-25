@@ -6,6 +6,7 @@ namespace HabitTracker
     {
         public void PresentMenu()
         {
+            Console.Clear();
             Console.WriteLine("MAIN MENU - HABIT LOGGER\n");
             Console.WriteLine("What would you like to do?");
 
