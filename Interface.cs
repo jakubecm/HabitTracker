@@ -34,7 +34,7 @@ namespace HabitTracker
                 if (!valid)
                 {
                     Console.WriteLine("Invalid input, please try again and input a valid number.");
-                    Console.Write("Your Selection:  ");
+                    Console.Write("Your answer:  ");
                 }
             }
 
