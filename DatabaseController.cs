@@ -147,6 +147,7 @@ namespace HabitTracker
             Console.WriteLine("Which habit records would you like to see?");
             int selectedOption = SelectHabitFromDb();
             string tableName = this.habits[selectedOption].habitName;
+            string unitName = this.habits[selectedOption].unitName;
 
             var viewString = $"SELECT * FROM {tableName}";
 
@@ -156,8 +157,10 @@ namespace HabitTracker
                 using var command = new SqliteCommand(viewString, connection);
                 using var reader = command.ExecuteReader();
 
+                Console.Clear();
                 Console.WriteLine($"HABIT RECORDS :  {tableName}");
-                Console.Write("----------------------------------");
+                Console.Write("------------------------------------------\n");
+                Console.WriteLine($"\tID\tDate\t\t{unitName}");
 
                 if (reader.HasRows)
                 {
@@ -166,12 +169,17 @@ namespace HabitTracker
                         var id = reader.GetInt32(0);
                         var date = reader.GetString(1);
                         var unit = reader.GetString(2);
-                        Console.WriteLine($"{id}\t{date}\t{unit}");
+                        Console.WriteLine($"\t{id}\t{date}\t{unit}");
                     }
+
+                    Console.Write("------------------------------------------\n");
+                    Console.WriteLine("Press any key to return to main menu.");
+                    Console.ReadKey();
                 }
                 else
                 {
-                    Console.WriteLine("No records found.");
+                    Console.WriteLine("No records found. Press any key to return.");
+                    Console.ReadKey();
                 }
             }
             catch (SqliteException ex)
@@ -182,7 +190,6 @@ namespace HabitTracker
 
         internal void UpdateRecord()
         {
-            ViewHabits();
             Console.WriteLine("Which habit table do you wish to update?");
             var selectedHabitIndex = SelectHabitFromDb();
             var table = this.habits[selectedHabitIndex].habitName;
@@ -204,7 +211,7 @@ namespace HabitTracker
                     var updateQuery = connection.CreateCommand();
                     updateQuery.CommandText = $"UPDATE {table} SET {unit} = @{unit} WHERE Id = @id";
                     updateQuery.Parameters.AddWithValue($"@{unit}", updatedMeasure);
-                    updateQuery.Parameters.AddWithValue($"@Id", selectedRecordId);
+                    updateQuery.Parameters.AddWithValue($"@id", selectedRecordId);
 
                     updateQuery.ExecuteNonQuery();
                     Console.WriteLine($"Row updated sucessfuly. Press any key to continue.");
@@ -217,13 +224,13 @@ namespace HabitTracker
             }
             else
             {
-                Console.WriteLine("There is no record of the entered ID in the selected habit table.");
+                Console.WriteLine("There is no record of the entered ID in the selected habit table. Press any key to return.");
+                Console.ReadKey();
             }
         }
 
         internal void DeleteRecord()
         {
-            ViewHabits();
             Console.WriteLine("Which habit table do you wish to delete from?");
             var selectedHabitIndex = SelectHabitFromDb();
             var table = this.habits[selectedHabitIndex].habitName;
@@ -239,11 +246,11 @@ namespace HabitTracker
                 try
                 {
                     connection.Open();
-                    var updateQuery = connection.CreateCommand();
-                    updateQuery.CommandText = $"DELETE FROM {table} WHERE Id = @id";
-                    updateQuery.Parameters.AddWithValue($"@Id", selectedRecordId);
+                    var deleteQuery = connection.CreateCommand();
+                    deleteQuery.CommandText = $"DELETE FROM {table} WHERE Id = @id";
+                    deleteQuery.Parameters.AddWithValue($"@id", selectedRecordId);
 
-                    updateQuery.ExecuteNonQuery();
+                    deleteQuery.ExecuteNonQuery();
                     Console.WriteLine($"Row deleted sucessfuly. Press any key to continue.");
                     Console.ReadKey();
                 }
