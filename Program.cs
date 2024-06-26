@@ -4,12 +4,14 @@
     {
         static void Main(string[] args)
         {
+            string dbFilename = "habit-tracker.db";
             bool requiresClosing = false;
+            bool seedRequired = !File.Exists(dbFilename);
 
             Interface appInterface = new Interface();
-            DatabaseController dbController = new(@"Data Source=habit-tracker.db");
+            DatabaseController dbController = new($@"Data Source={dbFilename}");
 
-            dbController.InitializeDatabase();
+            dbController.InitializeDatabase(seedRequired);
 
             while (!requiresClosing)
             {

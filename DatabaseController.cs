@@ -91,28 +91,23 @@ namespace HabitTracker
         }
 
         /// <summary>
-        /// Method for initializing the DB. Creates the first habit table (if not existant already).
+        /// Method for initializing the DB. Creates the database with some mock habits and seeds the first habit.
         /// </summary>
-        public void InitializeDatabase()
+        public void InitializeDatabase(bool seedRequired)
         {
-
-            connection.Open();
-            var tableCmd = connection.CreateCommand();
-
-            tableCmd.CommandText = @"CREATE TABLE IF NOT EXISTS drinking_water (
-                                            Id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                            Date TEXT,
-                                            Quantity INTEGER
-                                            )";
-
-            tableCmd.ExecuteNonQuery();
-
-            connection.Close();
+            if (seedRequired)
+            {
+                Console.WriteLine("Database created. Seeding...");
+                SeedDatabase();
+            }
+            else
+            {
+                Console.WriteLine("Database found. Loading tables...");
+            }
 
             LoadInfoFromDatabase();
             ViewHabits();
-
-            Console.WriteLine("Database loaded. Press any key to continue.");
+            Console.WriteLine("Database ready. Press any key to continue.");
             Console.ReadKey();
         }
 
@@ -152,6 +147,8 @@ namespace HabitTracker
             int measure = Interface.ParseSelection();
 
             InsertRecord(this.habits[selectedOption], date, measure);
+            Console.WriteLine("Insert successful. Press any key to continue.");
+            Console.ReadKey();
         }
 
         /// <summary>
@@ -170,9 +167,6 @@ namespace HabitTracker
 
             insertCmd.ExecuteNonQuery();
             connection.Close();
-
-            Console.WriteLine("Insert successful. Press any key to continue.");
-            Console.ReadKey();
         }
 
         /// <summary>
@@ -407,6 +401,57 @@ namespace HabitTracker
             return false;
         }
 
+        /// <summary>
+        /// Helper method for seeding the initial table with some mock data
+        /// </summary>
+        internal void SeedDatabase()
+        {
+            List<(string habitName, string unitName)> seedHabits = new();
 
+            seedHabits.AddRange(new List<(string habitName, string unitName)>
+            {
+                ("Drinking_Water", "Liters"),
+                ("Running", "Kilometers"),
+                ("Reading", "Pages"),
+                ("Sleeping", "Hours")
+            });
+
+            this.connection.Open();
+            var createCmd = connection.CreateCommand();
+
+            foreach (var habit in seedHabits)
+            {
+                createCmd.CommandText = $"CREATE TABLE IF NOT EXISTS {habit.habitName} (Id INTEGER PRIMARY KEY AUTOINCREMENT, Date TEXT, {habit.unitName} INTEGER)";
+                createCmd.ExecuteNonQuery();
+            }
+
+            SeedTable(seedHabits[0]);
+            this.connection.Close();
+        }
+
+        /// <summary>
+        /// Helper method for seeding a concrete table with a 100 mock records
+        /// </summary>
+        /// <param name="habit"></param>
+        internal void SeedTable((string habitName, string unitName) habit)
+        {
+            int day = 01;
+            int month = 06;
+
+            for (int i = 0; i < 100; i++)
+            {
+                var randomGenerator = new Random();
+                int measure = randomGenerator.Next(1, 100);
+                string date = $"{day++}-{month}-2024";
+
+                if (day >= 25)
+                {
+                    day = 1;
+                    month++;
+                }
+
+                InsertRecord(habit, date, measure);
+            }
+        }
     }
 }
