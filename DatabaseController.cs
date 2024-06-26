@@ -5,10 +5,19 @@ namespace HabitTracker
 {
     public class DatabaseController
     {
+        /// <value>The connection string used to create the Sqlite connection</value>
         private string connectionString;
+
+        /// <value>Instance of the connection (for reusability)</value>
         private SqliteConnection connection;
+
+        /// <value>A list containing habits in the form of pairs name-unit</value>
         private List<(string habitName, string unitName)> habits;
 
+        /// <summary>
+        /// Constructor for the DB controller, sets up the connection instance.
+        /// </summary>
+        /// <param name="connectionString">The connection string used to make the connection.</param>
         public DatabaseController(string connectionString)
         {
             this.connectionString = connectionString;
@@ -16,6 +25,9 @@ namespace HabitTracker
             this.habits = new();
         }
 
+        /// <summary>
+        /// Method that pulls the table and unit names and loads them into the list for the program.
+        /// </summary>
         internal void LoadInfoFromDatabase()
         {
             connection.Open();
@@ -30,7 +42,7 @@ namespace HabitTracker
                     string tableName = reader.GetString(0); // Get table name from reader
 
                     // Retrieve the name of the third column in the table
-                    string unitName = GetThirdColumnName(connection, tableName);
+                    string unitName = GetHabitUnitName(connection, tableName);
 
                     habits.Add((tableName, unitName));
                 }
@@ -39,7 +51,14 @@ namespace HabitTracker
             connection.Close();
         }
 
-        internal string GetThirdColumnName(SqliteConnection connection, string tableName)
+        /// <summary>
+        /// Helper method that gets the name of the unit for the habit.
+        /// </summary>
+        /// <param name="connection">DB connection instance</param>
+        /// <param name="tableName">Name of the habit table</param>
+        /// <returns>Name of the measuring unit for the habit</returns>
+        /// <exception cref="Exception">Gets thrown in case the table has fewer than 3 cols.</exception>
+        internal string GetHabitUnitName(SqliteConnection connection, string tableName)
         {
             string? columnName = null;
 
@@ -71,7 +90,9 @@ namespace HabitTracker
             return columnName!;
         }
 
-
+        /// <summary>
+        /// Method for initializing the DB. Creates the first habit table (if not existant already).
+        /// </summary>
         public void InitializeDatabase()
         {
 
@@ -95,6 +116,9 @@ namespace HabitTracker
             Console.ReadKey();
         }
 
+        /// <summary>
+        /// Method that gathers information to be able to insert a new record into a specified habit table.
+        /// </summary>
         internal void PrepareInsert()
         {
             string date = DateTime.Now.ToString("dd-MM-yyyy");
@@ -130,6 +154,12 @@ namespace HabitTracker
             InsertRecord(this.habits[selectedOption], date, measure);
         }
 
+        /// <summary>
+        /// CRUD method for creating a new record in the specified table
+        /// </summary>
+        /// <param name="habit">The habit tuple in the form of table and unit names</param>
+        /// <param name="date">The date of the record</param>
+        /// <param name="measure">Value of the unit that will be inserted</param>
         internal void InsertRecord((string tableName, string unitsName) habit, string date, int measure)
         {
             connection.Open();
@@ -140,8 +170,14 @@ namespace HabitTracker
 
             insertCmd.ExecuteNonQuery();
             connection.Close();
+
+            Console.WriteLine("Insert successful. Press any key to continue.");
+            Console.ReadKey();
         }
 
+        /// <summary>
+        /// CRUD method for reading all records of a specified habit
+        /// </summary>
         internal void ViewRecords()
         {
             Console.WriteLine("Which habit records would you like to see?");
@@ -173,7 +209,7 @@ namespace HabitTracker
                     }
 
                     Console.Write("------------------------------------------\n");
-                    Console.WriteLine("Press any key to return to main menu.");
+                    Console.WriteLine("Press any key to return.");
                     Console.ReadKey();
                 }
                 else
@@ -188,6 +224,9 @@ namespace HabitTracker
             }
         }
 
+        /// <summary>
+        /// CRUD method for updating a record of the specified habit
+        /// </summary>
         internal void UpdateRecord()
         {
             Console.WriteLine("Which habit table do you wish to update?");
@@ -229,6 +268,9 @@ namespace HabitTracker
             }
         }
 
+        /// <summary>
+        /// CRUD method for deleting the record of a specified habit
+        /// </summary>
         internal void DeleteRecord()
         {
             Console.WriteLine("Which habit table do you wish to delete from?");
@@ -261,10 +303,14 @@ namespace HabitTracker
             }
             else
             {
-                Console.WriteLine("There is no record of the entered ID in the selected habit table.");
+                Console.WriteLine("There is no record of the entered ID in the selected habit table. Press any key to return.");
+                Console.ReadKey();
             }
         }
 
+        /// <summary>
+        /// Method for creating a new habit in case the user wants to.
+        /// </summary>
         internal void CreateHabit()
         {
             Console.Write("Insert a name for the new habit: ");
@@ -284,6 +330,9 @@ namespace HabitTracker
             Console.ReadKey();
         }
 
+        /// <summary>
+        /// Helper method for viewing all habits
+        /// </summary>
         internal void ViewHabits()
         {
             for (int i = 0; i < habits.Count; i++)
@@ -293,6 +342,11 @@ namespace HabitTracker
             }
             Console.WriteLine("-----------------------------");
         }
+
+        /// <summary>
+        /// Helper method for retreving specified habit from the user.
+        /// </summary>
+        /// <returns>Index of the habit in the habit list</returns>
         internal int SelectHabitFromDb()
         {
             bool validChoice = false;
@@ -315,6 +369,11 @@ namespace HabitTracker
             return selectedOption;
         }
 
+        /// <summary>
+        /// Helper method for checking if the inserted date from the user is valid.
+        /// </summary>
+        /// <param name="date">Date that will be checked in form of a string</param>
+        /// <returns>True if the date is valid, false otherwise.</returns>
         internal static bool IsValidDate(string date)
         {
             DateTime tempDate;
@@ -324,6 +383,12 @@ namespace HabitTracker
             return DateTime.TryParseExact(date, format, provider, DateTimeStyles.None, out tempDate);
         }
 
+        /// <summary>
+        /// Helper method for checking if the record of the specified ID exists in the habit table.
+        /// </summary>
+        /// <param name="table">Name of the table to search in</param>
+        /// <param name="id">ID of the record in form of an integer</param>
+        /// <returns>True if the record does exist, false otherwise</returns>
         internal bool DoesRecordExist(string table, int id)
         {
             connection.Open();

@@ -4,6 +4,9 @@ namespace HabitTracker
 {
     public class Interface
     {
+        /// <summary>
+        /// Method for presenting menu options of the logger.
+        /// </summary>
         public void PresentMenu()
         {
             Console.Clear();
@@ -20,6 +23,10 @@ namespace HabitTracker
             Console.WriteLine("\n--------------------------------------------");
         }
 
+        /// <summary>
+        /// Method for parsing integer input from the user.
+        /// </summary>
+        /// <returns>A valid integer representation of the user input</returns>
         public static int ParseSelection()
         {
             Console.Write("Your Selection:  ");
@@ -34,13 +41,19 @@ namespace HabitTracker
                 if (!valid)
                 {
                     Console.WriteLine("Invalid input, please try again and input a valid number.");
-                    Console.Write("Your answer:  ");
+                    Console.Write("Your Selection:  ");
                 }
             }
 
             return parsedInput;
         }
 
+        /// <summary>
+        /// Method that invokes the required DB controller method based on user input
+        /// </summary>
+        /// <param name="selectedOption">The integer representation of user's choice</param>
+        /// <param name="dbController">Database controller instance</param>
+        /// <returns></returns>
         internal bool ExecuteSelected(int selectedOption, DatabaseController dbController)
         {
             switch (selectedOption)
