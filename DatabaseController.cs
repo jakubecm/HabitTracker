@@ -188,16 +188,18 @@ namespace HabitTracker
         /// <summary>
         /// CRUD method for reading all records of a specified habit
         /// </summary>
-        internal void ViewRecords()
+        internal void ViewRecords(bool userInputRequired, int habitId = 1)
         {
-            Console.WriteLine("Which habit records would you like to see?");
-            int habitId = SelectHabitFromDb();
+            if (userInputRequired)
+            {
+                Console.WriteLine("Which habit records would you like to see?");
+                habitId = SelectHabitFromDb();
+            }
+
             string unitName = FetchUnit(habitId);
 
             var viewString = connection.CreateCommand();
-
             viewString.CommandText = @"SELECT hl.Id, hl.Date, hl.Quantity FROM HabitsLogged hl JOIN Habits h ON hl.HabitId = h.Id WHERE h.Id = @habitId";
-
             viewString.Parameters.AddWithValue("@habitId", habitId);
 
             connection.Open();
@@ -219,14 +221,20 @@ namespace HabitTracker
                         Console.WriteLine($"\t{habitLogId}\t{date}\t{quantity}");
                     }
 
-                    Console.Write("------------------------------------------\n");
-                    Console.WriteLine("Press any key to return.");
-                    Console.ReadKey();
+                    if (userInputRequired)
+                    {
+                        Console.Write("------------------------------------------\n");
+                        Console.WriteLine("Press any key to return.");
+                        Console.ReadKey();
+                    }
                 }
                 else
                 {
-                    Console.WriteLine("No records found. Press any key to return.");
-                    Console.ReadKey();
+                    if (userInputRequired)
+                    {
+                        Console.WriteLine("No records found. Press any key to return.");
+                        Console.ReadKey();
+                    }
                 }
 
             }
@@ -240,7 +248,7 @@ namespace HabitTracker
         {
             Console.WriteLine("Which habit do you wish to update?");
             var habitId = SelectHabitFromDb();
-            DisplayHabitRecords(habitId);
+            ViewRecords(false, habitId);
 
             Console.WriteLine("What is the ID of the record you wish to update?");
             var selectedRecordId = Interface.ParseSelection();
@@ -283,7 +291,7 @@ namespace HabitTracker
         {
             Console.WriteLine("Which habit table do you wish to delete from?");
             var selectedHabitIndex = SelectHabitFromDb();
-            DisplayHabitRecords(selectedHabitIndex);
+            ViewRecords(false, selectedHabitIndex);
 
             Console.WriteLine("What is the ID of the record you wish to delete?");
             var selectedRecordId = Interface.ParseSelection();
@@ -513,9 +521,5 @@ namespace HabitTracker
             }
         }
 
-        private void DisplayHabitRecords(int habitId)
-        {
-            throw new NotImplementedException();
-        }
     }
 }
